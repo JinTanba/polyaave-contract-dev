@@ -10,6 +10,7 @@ import "../../core/CoreMath.sol";
 import "../../interfaces/ILiquidityLayer.sol";
 import "../../interfaces/IOracle.sol";
 import "../PolynanceEE.sol";
+import "./ReserveLogic.sol";
 
 library BorrowLogic {
     using SafeERC20 for IERC20;
@@ -58,8 +59,8 @@ library BorrowLogic {
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, borrower);
         
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        PoolData memory pool = StorageShell.getPool();
+        // 2. Update market indices and get updated state
+        (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
         UserPosition memory position = StorageShell.getUserPosition(positionId);
         
         // Check if position exists but trying to borrow without collateral
@@ -67,15 +68,15 @@ library BorrowLogic {
             revert PolynanceEE.InsufficientCollateral();
         }
         
-        // 2. Get oracle price in Ray format
+        // 3. Get oracle price in Ray format
         uint256 currentPriceWad = IOracle(params.priceOracle).getCurrentPrice(predictionAsset);
         uint256 currentPriceRay = currentPriceWad.wadToRay();
         
-        // 3. Get protocol total debt from Aave
+        // 4. Get protocol total debt from Aave
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
             .getTotalDebt(params.supplyAsset, address(this));
         
-        // 4. Create Core input with price in Ray
+        // 5. Create Core input with price in Ray
         CoreBorrowInput memory input = CoreBorrowInput({
             borrowAmount: borrowAmount,
             collateralAmount: collateralAmount,
@@ -83,7 +84,7 @@ library BorrowLogic {
             protocolTotalDebt: protocolTotalDebt
         });
         
-        // 5. Call Core (which updates indices internally)
+        // 6. Call Core with updated market and pool data
         Core core = Core(address(this));
         (
             MarketData memory newMarket,
@@ -110,7 +111,7 @@ library BorrowLogic {
             ILiquidityLayer(params.liquidityLayer).borrow(
                 params.supplyAsset, 
                 actualBorrowAmount, 
-                InterestRateMode(InterestRateMode.VARIABLE), // Assuming VARIABLE borrow rate
+                InterestRateMode.VARIABLE, // Assuming VARIABLE borrow rate
                 address(this)
             );
             IERC20(params.supplyAsset).safeTransfer(borrower, actualBorrowAmount);
@@ -142,33 +143,33 @@ library BorrowLogic {
     ) internal returns (uint256 actualRepayAmount) {
         // 1. Load current state
         RiskParams memory params = StorageShell.getRiskParams();
-         Core core = Core(address(this));
+        Core core = Core(address(this));
         
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, borrower);
         
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        PoolData memory pool = StorageShell.getPool();
+        // 2. Update market indices and get updated state
+        (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
         UserPosition memory position = StorageShell.getUserPosition(positionId);
         
         if (position.scaledDebtBalance == 0) revert PolynanceEE.NoDebtToRepay();
         
-        // 2. Get protocol total debt from Aave
+        // 3. Get protocol total debt from Aave
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
             .getTotalDebt(params.supplyAsset, address(this));
         
-        // 3. If repayAmount is 0, calculate total debt to repay all
+        // 4. If repayAmount is 0, calculate total debt to repay all
         if (repayAmount == 0) {
             (repayAmount, , ) = core.getUserDebt(market, pool, position, protocolTotalDebt);
         }
         
-        // 4. Create Core input
+        // 5. Create Core input
         CoreRepayInput memory input = CoreRepayInput({
             repayAmount: repayAmount,
             protocolTotalDebt: protocolTotalDebt
         });
         
-        // 5. Call Core
+        // 6. Call Core
         (
             MarketData memory newMarket,
             PoolData memory newPool,
@@ -178,14 +179,14 @@ library BorrowLogic {
         
         actualRepayAmount = output.actualRepayAmount;
         
-        // 6. Store updated state
+        // 7. Store updated state
         StorageShell.next(DataType.MARKET_DATA, abi.encode(newMarket), marketId);
         StorageShell.next(DataType.POOL_DATA, abi.encode(newPool), ZERO_ID);
         StorageShell.next(DataType.USER_POSITION, abi.encode(newPosition), positionId);
         
-        // 7. Execute side effects
+        // 8. Execute side effects
         // Transfer repay amount from user
-        IERC20(params.supplyAsset).safeTransferFrom(borrower, address(this), actualRepayAmount);
+        IERC20(params.supplyAsset).safeTransferFrom(borrower, address(this), output.totalDebt);
         
         // Repay to Aave (only the liquidity portion)
         if (output.liquidityRepayAmount > 0) {

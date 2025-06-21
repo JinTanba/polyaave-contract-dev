@@ -11,6 +11,7 @@ import "../../interfaces/ILiquidityLayer.sol";
 import "../../interfaces/IOracle.sol";
 import "../../interfaces/IPositionToken.sol";
 import "../PolynanceEE.sol";
+import "./ReserveLogic.sol";
 
 library MarketResolveLogic {
     using SafeERC20 for IERC20;
@@ -59,30 +60,31 @@ library MarketResolveLogic {
         if (resolver != params.curator) revert PolynanceEE.NotCurator();
         
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        PoolData memory pool = StorageShell.getPool();
+        
+        // 2. Update market indices and get updated state
+        (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
         ResolutionData memory resolution = StorageShell.getResolutionData(marketId);
         
         if (resolution.isMarketResolved) revert PolynanceEE.MarketAlreadyResolved();
         if (!market.isActive) revert PolynanceEE.MarketNotActive();
         
-        // 2. Redeem all collateral
+        // 3. Redeem all collateral
         uint256 balanceBefore = IERC20(params.supplyAsset).balanceOf(address(this));
         IPositionToken(predictionAsset).redeem();
         uint256 balanceAfter = IERC20(params.supplyAsset).balanceOf(address(this));
         uint256 totalCollateralRedeemed = balanceAfter - balanceBefore;
         
-        // 3. Get current Aave debt
+        // 4. Get current Aave debt
         uint256 liquidityLayerDebt = ILiquidityLayer(params.liquidityLayer)
             .getDebtBalance(params.supplyAsset, address(this), InterestRateMode.VARIABLE);
         
-        // 4. Create Core input
+        // 5. Create Core input
         CoreResolutionInput memory input = CoreResolutionInput({
             totalCollateralRedeemed: totalCollateralRedeemed,
             liquidityLayerDebt: liquidityLayerDebt
         });
         
-        // 5. Call Core to calculate distributions
+        // 6. Call Core to calculate distributions
         Core core = Core(address(this));
         (
             MarketData memory newMarket,
@@ -90,12 +92,12 @@ library MarketResolveLogic {
             ResolutionData memory newResolution
         ) = core.processResolution(market, pool, resolution, input, params);
         
-        // 6. Store updated state
+        // 7. Store updated state
         StorageShell.next(DataType.MARKET_DATA, abi.encode(newMarket), marketId);
         StorageShell.next(DataType.POOL_DATA, abi.encode(newPool), ZERO_ID);
         StorageShell.next(DataType.RESOLUTION_DATA, abi.encode(newResolution), marketId);
         
-        // 7. Repay Aave debt
+        // 8. Repay Aave debt
         if (newResolution.liquidityRepaid > 0) {
             ILiquidityLayer(params.liquidityLayer).repay(
                 params.supplyAsset,
@@ -105,7 +107,7 @@ library MarketResolveLogic {
             );
         }
         
-        // 8. Get final price for event
+        // 9. Get final price for event
         uint256 finalPrice = IOracle(params.priceOracle).getCurrentPrice(predictionAsset);
         
         emit MarketResolved(

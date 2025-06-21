@@ -19,7 +19,7 @@ contract Core {
      * @notice Update market indices based on elapsed time
      * @dev Updates variableBorrowIndex and tracks accumulated spread
      */
-    function _updateMarketIndices(
+    function updateMarketIndices(
         MarketData memory market,
         PoolData memory pool,
         RiskParams memory params,
@@ -196,33 +196,28 @@ contract Core {
         
         // Get current debt components
         (uint256 totalDebt, uint256 principalDebt,) = CoreMath.calculateUserTotalDebt(
-            input.repayAmount,
+            input.repayAmount, //calculate total debt based on repay amount
             newMarket.totalBorrowed,
             userPrincipalDebt,
             newPosition.scaledDebtBalance,
             newMarket.variableBorrowIndex
         );
 
-        uint256 currentRepayReduction = Math.mulDiv(
-            actualRepayAmount,
-            actualRepayAmount,
-            newPosition.borrowAmount
-        );
-        uint256 scaledCurrentRepayReduction = CoreMath.calculateScaledDebt(currentRepayReduction, newMarket.variableBorrowIndex);
+        uint256 scaledCurrentRepayReduction = CoreMath.calculateScaledDebt(totalDebt, newMarket.variableBorrowIndex);
         uint256 collateralToReturn = Math.mulDiv(
             newPosition.collateralAmount,
             actualRepayAmount,
             newPosition.borrowAmount
         );
         newPosition.scaledDebtBalance -= scaledCurrentRepayReduction;
-        newPosition.borrowAmount -= currentRepayReduction;
+        newPosition.borrowAmount -= actualRepayAmount;
         newPosition.collateralAmount -= collateralToReturn;
 
-        newMarket.totalBorrowed -= currentRepayReduction;
+        newMarket.totalBorrowed -= actualRepayAmount;
         newMarket.totalScaledBorrowed -= scaledCurrentRepayReduction;
         newMarket.totalCollateral -= collateralToReturn;
 
-        newPool.totalBorrowedAllMarkets -= currentRepayReduction;
+        newPool.totalBorrowedAllMarkets -= actualRepayAmount;
 
         aux = CoreRepayOutput({
             actualRepayAmount: actualRepayAmount,
@@ -299,7 +294,7 @@ contract Core {
         );
         
         aux = CoreLiquidationOutput({
-            actualRepayAmount: repayOutput.actualRepayAmount,
+            actualRepayAmount: repayOutput.totalDebt, //repay amount including interest
             liquidityRepayAmount: repayOutput.liquidityRepayAmount,
             collateralSeized: repayOutput.collateralToReturn
         });
@@ -321,7 +316,7 @@ contract Core {
         ResolutionData memory resolution,
         CoreResolutionInput memory input,
         RiskParams memory params
-    ) external view returns (
+    ) external pure returns (
         MarketData memory newMarket,
         PoolData memory newPool,
         ResolutionData memory newResolution
@@ -329,12 +324,11 @@ contract Core {
         require(!resolution.isMarketResolved, "Already resolved");
         
         newResolution = resolution;
-        
-        // Update indices one final time
-        (newMarket, newPool) = _updateMarketIndices(market, pool, params, block.timestamp);
+        newMarket = market;
+        newPool = pool;
         
         // Calculate total spread for this market
-        uint256 marketSpread = newMarket.accumulatedSpread + CoreMath.calculateSpreadEarned(
+        uint256 marketSpread = CoreMath.calculateSpreadEarned(
             newMarket.totalScaledBorrowed,
             newMarket.variableBorrowIndex,
             newMarket.totalBorrowed
@@ -362,7 +356,7 @@ contract Core {
         
         // Update resolution state
         newResolution.isMarketResolved = true;
-        newResolution.marketResolvedTimestamp = block.timestamp;
+        // newResolution.marketResolvedTimestamp = block.timestamp;
         newResolution.totalCollateralRedeemed = input.totalCollateralRedeemed;
         newResolution.liquidityRepaid = liquidityRepayment;
         newResolution.protocolPool = protocolPool;

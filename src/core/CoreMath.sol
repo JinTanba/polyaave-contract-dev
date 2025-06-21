@@ -40,37 +40,47 @@ library CoreMath {
         return totalBorrowed.rayDiv(totalSupplied);
     }
 
-    /**
-     * @notice Calculate spread rate based on utilization
-     * @param totalBorrowed Total borrowed amount
-     * @param totalSupplied Total supplied amount
-     * @param baseSpreadRate Base spread rate in Ray
-     * @param optimalUtilization Optimal utilization in Ray
-     * @param slope1 Slope below optimal
-     * @param slope2 Slope above optimal
-     * @return spreadRate Spread rate in Ray
-     */
-    function calculateSpreadRate(
-        uint256 totalBorrowed,
-        uint256 totalSupplied,
-        uint256 baseSpreadRate,
-        uint256 optimalUtilization,
-        uint256 slope1,
-        uint256 slope2
-    ) internal pure returns (uint256 spreadRate) {
-        uint256 utilization = calculateUtilization(totalBorrowed, totalSupplied);
-        
-        if (utilization <= optimalUtilization) {
-            spreadRate = baseSpreadRate + slope1.rayMul(utilization);
-        } else {
-            uint256 excessUtilization = utilization - optimalUtilization;
-            spreadRate = baseSpreadRate + 
-                slope1.rayMul(optimalUtilization) +
-                slope2.rayMul(excessUtilization);
-        }
-        
-        return spreadRate;
+/**
+ * @notice Calculate Polynance spread‐rate (annualized, Ray precision)  
+ *         ── *normalized* so that slope1 is the exact increment at u = uOpt.
+ *
+ *  r(u) =
+ *    ┌ r0 + slope1 · (u / uOpt)                           0 ≤ u ≤ uOpt
+ *    └ r0 + slope1 + slope2 · (u − uOpt)                  uOpt < u ≤ 1
+ *
+ * @param totalBorrowed        Σ debt across all markets (Ray‐denominated asset units)
+ * @param totalSupplied        Σ supplied liquidity
+ * @param baseSpreadRate       r0  – protocol’s base spread   (Ray, per-year)
+ * @param optimalUtilization   uOpt – “kink” utilisation      (Ray 0–1)
+ * @param slope1               desired increment at u = uOpt  (Ray, per-year)
+ * @param slope2               increment per 1.0 util above uOpt (Ray, per-year)
+ * @return spreadRate          instantaneous borrow spread     (Ray, per-year)
+ */
+function calculateSpreadRate(
+    uint256 totalBorrowed,
+    uint256 totalSupplied,
+    uint256 baseSpreadRate,
+    uint256 optimalUtilization,
+    uint256 slope1,
+    uint256 slope2
+) internal pure returns (uint256 spreadRate) {
+    uint256 utilization = calculateUtilization(totalBorrowed, totalSupplied);
+
+    if (utilization <= optimalUtilization) {
+        // below or at the kink: r = r0 + slope1 * (u / uOpt)
+        spreadRate = baseSpreadRate
+            + slope1.rayMul(utilization).rayDiv(optimalUtilization);
+    } else {
+        // above the kink: extra linear segment with slope2
+        uint256 excessUtilization = utilization - optimalUtilization;
+        spreadRate = baseSpreadRate
+            + slope1                              // r0 + slope1 at u = uOpt
+            + slope2.rayMul(excessUtilization);
     }
+
+    return spreadRate;
+}
+
 
     /**
      * @notice Calculate new borrow index after time elapsed

@@ -1,0 +1,380 @@
+[
+  {
+    "name": "Equal distribution across 2 markets",
+    "protocol_debt": 1000000000000,
+    "total_borrowed_all_markets": 1000000000000,
+    "markets": [
+      {
+        "id": 0,
+        "total_borrowed": 500000000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 500000000000,
+        "users": [
+          {
+            "borrow_amount": 100000000000,
+            "scaled_debt": 100000000000,
+            "expected_principal_debt": 100000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 100000000000
+          },
+          {
+            "borrow_amount": 200000000000,
+            "scaled_debt": 200000000000,
+            "expected_principal_debt": 200000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 200000000000
+          },
+          {
+            "borrow_amount": 200000000000,
+            "scaled_debt": 200000000000,
+            "expected_principal_debt": 200000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 200000000000
+          }
+        ],
+        "sum_user_principal_debt": 500000000000,
+        "sum_user_total_debt": 500000000000,
+        "principal_deviation": 0
+      },
+      {
+        "id": 1,
+        "total_borrowed": 500000000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 500000000000,
+        "users": [
+          {
+            "borrow_amount": 250000000000,
+            "scaled_debt": 250000000000,
+            "expected_principal_debt": 250000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 250000000000
+          },
+          {
+            "borrow_amount": 250000000000,
+            "scaled_debt": 250000000000,
+            "expected_principal_debt": 250000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 250000000000
+          }
+        ],
+        "sum_user_principal_debt": 500000000000,
+        "sum_user_total_debt": 500000000000,
+        "principal_deviation": 0
+      }
+    ],
+    "sum_market_debts": 1000000000000,
+    "protocol_debt_deviation": 0
+  },
+  {
+    "name": "Unequal distribution with different interest rates",
+    "protocol_debt": 1100000000000,
+    "total_borrowed_all_markets": 1000000000000,
+    "markets": [
+      {
+        "id": 0,
+        "total_borrowed": 700000000000,
+        "borrow_index": 1080000000000000000000000000,
+        "expected_market_debt": 770000000000,
+        "users": [
+          {
+            "borrow_amount": 300000000000,
+            "scaled_debt": 277777777777,
+            "expected_principal_debt": 330000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 330000000000
+          },
+          {
+            "borrow_amount": 400000000000,
+            "scaled_debt": 370370370370,
+            "expected_principal_debt": 440000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 440000000000
+          }
+        ],
+        "sum_user_principal_debt": 770000000000,
+        "sum_user_total_debt": 770000000000,
+        "principal_deviation": 0
+      },
+      {
+        "id": 1,
+        "total_borrowed": 300000000000,
+        "borrow_index": 1150000000000000000000000000,
+        "expected_market_debt": 330000000000,
+        "users": [
+          {
+            "borrow_amount": 300000000000,
+            "scaled_debt": 260869565217,
+            "expected_principal_debt": 330000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 330000000000
+          }
+        ],
+        "sum_user_principal_debt": 330000000000,
+        "sum_user_total_debt": 330000000000,
+        "principal_deviation": 0
+      }
+    ],
+    "sum_market_debts": 1100000000000,
+    "protocol_debt_deviation": 0
+  },
+  {
+    "name": "Single user monopoly in market",
+    "protocol_debt": 500000000000,
+    "total_borrowed_all_markets": 500000000000,
+    "markets": [
+      {
+        "id": 0,
+        "total_borrowed": 500000000000,
+        "borrow_index": 1200000000000000000000000000,
+        "expected_market_debt": 500000000000,
+        "users": [
+          {
+            "borrow_amount": 500000000000,
+            "scaled_debt": 416666666666,
+            "expected_principal_debt": 500000000000,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 500000000000
+          }
+        ],
+        "sum_user_principal_debt": 500000000000,
+        "sum_user_total_debt": 500000000000,
+        "principal_deviation": 0
+      }
+    ],
+    "sum_market_debts": 500000000000,
+    "protocol_debt_deviation": 0
+  },
+  {
+    "name": "Many markets with rounding edge cases",
+    "protocol_debt": 1000003000000,
+    "total_borrowed_all_markets": 999973000000,
+    "markets": [
+      {
+        "id": 0,
+        "total_borrowed": 76921000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 76923307692,
+        "users": [
+          {
+            "borrow_amount": 25640333333,
+            "scaled_debt": 25640333333,
+            "expected_principal_debt": 25641102563,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 25641102563
+          },
+          {
+            "borrow_amount": 25640333333,
+            "scaled_debt": 25640333333,
+            "expected_principal_debt": 25641102563,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 25641102563
+          },
+          {
+            "borrow_amount": 25640333334,
+            "scaled_debt": 25640333334,
+            "expected_principal_debt": 25641102564,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 25641102564
+          }
+        ],
+        "sum_user_principal_debt": 76923307692,
+        "sum_user_total_debt": 76923307692,
+        "principal_deviation": 0
+      },
+      {
+        "id": 1,
+        "total_borrowed": 100589000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 100592017751,
+        "users": [
+          {
+            "borrow_amount": 33529666666,
+            "scaled_debt": 33529666666,
+            "expected_principal_debt": 33530672583,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 33530672583
+          },
+          {
+            "borrow_amount": 33529666666,
+            "scaled_debt": 33529666666,
+            "expected_principal_debt": 33530672583,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 33530672583
+          },
+          {
+            "borrow_amount": 33529666668,
+            "scaled_debt": 33529666668,
+            "expected_principal_debt": 33530672585,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 33530672585
+          }
+        ],
+        "sum_user_principal_debt": 100592017751,
+        "sum_user_total_debt": 100592017751,
+        "principal_deviation": 0
+      },
+      {
+        "id": 2,
+        "total_borrowed": 112423000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 112426372781,
+        "users": [
+          {
+            "borrow_amount": 37474333333,
+            "scaled_debt": 37474333333,
+            "expected_principal_debt": 37475457593,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 37475457593
+          },
+          {
+            "borrow_amount": 37474333333,
+            "scaled_debt": 37474333333,
+            "expected_principal_debt": 37475457593,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 37475457593
+          },
+          {
+            "borrow_amount": 37474333334,
+            "scaled_debt": 37474333334,
+            "expected_principal_debt": 37475457594,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 37475457594
+          }
+        ],
+        "sum_user_principal_debt": 112426372781,
+        "sum_user_total_debt": 112426372781,
+        "principal_deviation": 0
+      },
+      {
+        "id": 3,
+        "total_borrowed": 136091000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 136095082840,
+        "users": [
+          {
+            "borrow_amount": 45363666666,
+            "scaled_debt": 45363666666,
+            "expected_principal_debt": 45365027612,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 45365027612
+          },
+          {
+            "borrow_amount": 45363666666,
+            "scaled_debt": 45363666666,
+            "expected_principal_debt": 45365027612,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 45365027612
+          },
+          {
+            "borrow_amount": 45363666668,
+            "scaled_debt": 45363666668,
+            "expected_principal_debt": 45365027614,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 45365027614
+          }
+        ],
+        "sum_user_principal_debt": 136095082840,
+        "sum_user_total_debt": 136095082840,
+        "principal_deviation": 0
+      },
+      {
+        "id": 4,
+        "total_borrowed": 171593000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 171598147928,
+        "users": [
+          {
+            "borrow_amount": 57197666666,
+            "scaled_debt": 57197666666,
+            "expected_principal_debt": 57199382642,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 57199382642
+          },
+          {
+            "borrow_amount": 57197666666,
+            "scaled_debt": 57197666666,
+            "expected_principal_debt": 57199382642,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 57199382642
+          },
+          {
+            "borrow_amount": 57197666668,
+            "scaled_debt": 57197666668,
+            "expected_principal_debt": 57199382644,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 57199382644
+          }
+        ],
+        "sum_user_principal_debt": 171598147928,
+        "sum_user_total_debt": 171598147928,
+        "principal_deviation": 0
+      },
+      {
+        "id": 5,
+        "total_borrowed": 183427000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 183432502958,
+        "users": [
+          {
+            "borrow_amount": 61142333333,
+            "scaled_debt": 61142333333,
+            "expected_principal_debt": 61144167652,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 61144167652
+          },
+          {
+            "borrow_amount": 61142333333,
+            "scaled_debt": 61142333333,
+            "expected_principal_debt": 61144167652,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 61144167652
+          },
+          {
+            "borrow_amount": 61142333334,
+            "scaled_debt": 61142333334,
+            "expected_principal_debt": 61144167653,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 61144167653
+          }
+        ],
+        "sum_user_principal_debt": 183432502958,
+        "sum_user_total_debt": 183432502958,
+        "principal_deviation": 0
+      },
+      {
+        "id": 6,
+        "total_borrowed": 218929000000,
+        "borrow_index": 1000000000000000000000000000,
+        "expected_market_debt": 218935568047,
+        "users": [
+          {
+            "borrow_amount": 72976333333,
+            "scaled_debt": 72976333333,
+            "expected_principal_debt": 72978522682,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 72978522682
+          },
+          {
+            "borrow_amount": 72976333333,
+            "scaled_debt": 72976333333,
+            "expected_principal_debt": 72978522682,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 72978522682
+          },
+          {
+            "borrow_amount": 72976333334,
+            "scaled_debt": 72976333334,
+            "expected_principal_debt": 72978522683,
+            "expected_spread_debt": 0,
+            "expected_total_debt": 72978522683
+          }
+        ],
+        "sum_user_principal_debt": 218935568047,
+        "sum_user_total_debt": 218935568047,
+        "principal_deviation": 0
+      }
+    ],
+    "sum_market_debts": 1000002999997,
+    "protocol_debt_deviation": 3
+  }
+]

@@ -9,6 +9,7 @@ import "../../core/Core.sol";
 import "../../interfaces/ILiquidityLayer.sol";
 import "../../interfaces/IOracle.sol";
 import "../PolynanceEE.sol";
+import "./ReserveLogic.sol";
 
 library LiquidationLogic {
     using SafeERC20 for IERC20;
@@ -51,30 +52,30 @@ library LiquidationLogic {
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, user);
         
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        PoolData memory pool = StorageShell.getPool();
+        // 2. Update market indices and get updated state
+        (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
         UserPosition memory position = StorageShell.getUserPosition(positionId);
         
-        // 2. Basic validation
+        // 3. Basic validation
         if (!market.isActive) revert PolynanceEE.MarketNotActive();
         if (position.scaledDebtBalance == 0) revert PolynanceEE.NoDebtToRepay();
         
-        // 3. Get oracle price in Ray format
+        // 4. Get oracle price in Ray format
         uint256 currentPriceWad = IOracle(params.priceOracle).getCurrentPrice(predictionAsset);
         uint256 currentPriceRay = currentPriceWad.wadToRay();
         
-        // 4. Get protocol total debt from Aave
+        // 5. Get protocol total debt from Aave
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
             .getTotalDebt(params.supplyAsset, address(this));
         
-        // 5. Create Core input
+        // 6. Create Core input
         CoreLiquidationInput memory input = CoreLiquidationInput({
             repayAmount: debtToCover,
             collateralPrice: currentPriceRay,
             protocolTotalDebt: protocolTotalDebt
         });
         
-        // 6. Call Core (handles all validation and calculations)
+        // 7. Call Core (handles all validation and calculations)
         Core core = Core(address(this));
         (
             MarketData memory newMarket,
@@ -86,12 +87,12 @@ library LiquidationLogic {
         actualDebtRepaid = output.actualRepayAmount;
         collateralSeized = output.collateralSeized;
         
-        // 7. Store updated state
+        // 8. Store updated state
         StorageShell.next(DataType.MARKET_DATA, abi.encode(newMarket), marketId);
         StorageShell.next(DataType.POOL_DATA, abi.encode(newPool), ZERO_ID);
         StorageShell.next(DataType.USER_POSITION, abi.encode(newPosition), positionId);
         
-        // 8. Execute side effects
+        // 9. Execute side effects
         // Transfer repay amount from liquidator
         IERC20(params.supplyAsset).safeTransferFrom(liquidator, address(this), actualDebtRepaid);
         

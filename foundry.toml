@@ -1,0 +1,17 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "@aave/=lib/aave-v3-core/contracts/",
+    "@sollib/=lib/solidity-lib/contracts/",
+    "@cti/=lib/conditional-token-index/src/"
+]
+
+# Optimizer settings
+optimizer = true
+optimizer_runs = 300
+via_ir = true
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

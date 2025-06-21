@@ -8,6 +8,7 @@ import "../DataStruct.sol";
 import "../../core/Core.sol";
 import "../../interfaces/ILiquidityLayer.sol";
 import "../PolynanceEE.sol";
+import "./ReserveLogic.sol";
 
 library SupplyLogic {
     using SafeERC20 for IERC20;
@@ -43,37 +44,12 @@ library SupplyLogic {
     ) internal returns (uint256 lpTokensMinted) {
         // 1. Load current state
         RiskParams memory params = StorageShell.getRiskParams();
-        PoolData memory pool = StorageShell.getPool();
         
         // 2. Validate
         if (amount == 0) revert PolynanceEE.InvalidAmount();
         
         // 3. Update indices for all active markets to ensure spread is current
-        Core core = Core(address(this));
-        for (uint256 i = 0; i < activeMarkets.length; i++) {
-            bytes32 marketId = activeMarkets[i];
-            MarketData memory market = StorageShell.getMarketData(marketId);
-            
-            if (market.isActive && market.lastUpdateTimestamp > 0) {
-                // Update market indices to accumulate spread
-                (
-                    MarketData memory updatedMarket,
-                    PoolData memory updatedPool
-                ) = core._updateMarketIndices(market, pool, params, block.timestamp);
-                
-                // Store updated market
-                StorageShell.next(DataType.MARKET_DATA, abi.encode(updatedMarket), marketId);
-                
-                // Update pool for next iteration
-                pool = updatedPool;
-                
-                emit MarketIndicesUpdated(
-                    marketId,
-                    updatedMarket.variableBorrowIndex,
-                    updatedMarket.accumulatedSpread
-                );
-            }
-        }
+        PoolData memory pool = ReserveLogic.updateMultipleMarketIndices(activeMarkets);
         
         // 4. Create Core input
         CoreSupplyInput memory input = CoreSupplyInput({
@@ -82,6 +58,7 @@ library SupplyLogic {
         });
         
         // 5. Call Core with updated pool state
+        Core core = Core(address(this));
         (
             PoolData memory newPool,
             CoreSupplyOutput memory output
@@ -106,7 +83,6 @@ library SupplyLogic {
         emit Supply(supplier, amount, lpTokensMinted);
         
         // Note: LP token minting is handled by the main contract (ERC20 mint)
-
         return lpTokensMinted;
     }
     
