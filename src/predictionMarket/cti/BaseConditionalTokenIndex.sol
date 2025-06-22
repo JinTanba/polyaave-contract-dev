@@ -27,6 +27,7 @@ abstract contract BaseConditionalTokenIndex is ERC20, IERC1155Receiver, ERC165 {
     }
 
     // State variables
+    uint8 immutable decimals_ = 6; //
     bool public indexSolved;
     uint256 public totalCollateralRedeemed;
     uint256 public totalSupplyAtSolve; // Locked at solve time to ensure fair redemption calculations
@@ -352,4 +353,9 @@ abstract contract BaseConditionalTokenIndex is ERC20, IERC1155Receiver, ERC165 {
             interfaceId == type(IERC1155Receiver).interfaceId ||
             super.supportsInterface(interfaceId);
     }
+
+    function decimals() public pure override returns (uint8) {
+        return decimals_;
+    }
+
 }

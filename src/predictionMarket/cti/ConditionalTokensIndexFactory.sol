@@ -52,19 +52,19 @@ contract ConditionalTokensIndexFactory is IERC1155Receiver {
         return _createIndex(indexImage,initData);
     }
 
-    function createIndexWithFunding(IndexImage calldata indexImage, bytes calldata initData, uint256 funding) external returns(address) {
-        address instance = _createIndex(indexImage,initData);
-        BaseConditionalTokenIndex indexInstance = BaseConditionalTokenIndex(instance);
-        uint256[] memory components = $(instance).components;
-        uint256[] memory fundingBatch = new uint256[](components.length);
-        for(uint256 i;i<components.length;i++) fundingBatch[i] = funding;
-        IConditionalTokens(ctf).safeBatchTransferFrom(msg.sender, address(this), components, fundingBatch, bytes(""));
-        IConditionalTokens(ctf).setApprovalForAll(instance, true);
-        indexInstance.deposit(funding);
-        if(indexInstance.balanceOf(address(this)) != funding) revert FailIndexInit("balance");
-        indexInstance.transfer(msg.sender,funding);
-        return instance;
-    }
+    // function createIndexWithFunding(IndexImage calldata indexImage, bytes calldata initData, uint256 funding) external returns(address) {
+    //     address instance = _createIndex(indexImage,initData);
+    //     BaseConditionalTokenIndex indexInstance = BaseConditionalTokenIndex(instance);
+    //     uint256[] memory components = $(instance).components;
+    //     uint256[] memory fundingBatch = new uint256[](components.length);
+    //     for(uint256 i;i<components.length;i++) fundingBatch[i] = funding;
+    //     IConditionalTokens(ctf).safeBatchTransferFrom(msg.sender, address(this), components, fundingBatch, bytes(""));
+    //     IConditionalTokens(ctf).setApprovalForAll(instance, true);
+    //     indexInstance.deposit(funding);
+    //     if(indexInstance.balanceOf(address(this)) != funding) revert FailIndexInit("balance");
+    //     indexInstance.transfer(msg.sender,funding);
+    //     return instance;
+    // }
  
     // function mergeIndex(
     //     address impl,
@@ -80,7 +80,7 @@ contract ConditionalTokensIndexFactory is IERC1155Receiver {
     //     for (uint256 i;i<indexList.length;i++) {
     //         BaseConditionalTokenIndex(indexList[i]).transferFrom(msg.sender,address(this),mergeAmount);
     //         BaseConditionalTokenIndex(indexList[i]).withdraw(mergeAmount);
-    //         IndexImage memory image = _recoveryIndexImage(indexList[i]);
+    //         IndexImage memory image = recoveryIndexImage(indexList[i]);
     //         p += image.indexSets.length;
     //         images[i]=image;
     //     }
@@ -103,7 +103,7 @@ contract ConditionalTokensIndexFactory is IERC1155Receiver {
     // }
 
 
-    function _recoveryIndexImage(address instance) internal view returns(IndexImage memory image) {
+    function recoveryIndexImage(address instance) public view returns(IndexImage memory image) {
         StorageInCode memory codeInStorage = $(instance);
         bytes memory encoded = abi.encode(codeInStorage);
         if(instance != Clones.predictDeterministicAddressWithImmutableArgs(
