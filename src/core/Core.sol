@@ -74,7 +74,7 @@ contract Core {
     function processSupply(
         PoolData memory pool,
         CoreSupplyInput memory input
-    ) external pure returns (
+    ) public pure returns (
         PoolData memory newPool,
         CoreSupplyOutput memory aux
     ) {
@@ -110,7 +110,7 @@ contract Core {
         UserPosition memory position,
         CoreBorrowInput memory input,
         RiskParams memory params
-    ) external pure returns(
+    ) public pure returns(
         MarketData memory,
         PoolData memory,
         UserPosition memory,
@@ -247,7 +247,7 @@ contract Core {
         UserPosition memory position,
         CoreLiquidationInput memory input,
         RiskParams memory params
-    ) external pure returns (
+    ) public pure returns (
         MarketData memory newMarket,
         PoolData memory newPool,
         UserPosition memory newPosition,
@@ -316,7 +316,7 @@ contract Core {
         ResolutionData memory resolution,
         CoreResolutionInput memory input,
         RiskParams memory params
-    ) external pure returns (
+    ) public pure returns (
         MarketData memory newMarket,
         PoolData memory newPool,
         ResolutionData memory newResolution
@@ -380,7 +380,7 @@ contract Core {
         PoolData memory pool,
         ResolutionData memory resolution,
         CoreLPRedemptionInput memory input
-    ) external pure returns (
+    ) public pure returns (
         CoreLPRedemptionOutput memory aux
     ) {
         require(resolution.isMarketResolved, "Market not resolved");
@@ -413,7 +413,7 @@ contract Core {
         MarketData memory market,
         ResolutionData memory resolution,
         UserPosition memory position
-    ) external pure returns (uint256 rebateAmount) {
+    ) public pure returns (uint256 rebateAmount) {
         require(resolution.isMarketResolved, "Market not resolved");
         
         return CoreMath.calculateBorrowerRebate(
@@ -466,7 +466,7 @@ contract Core {
     function getUtilization(
         MarketData memory market,
         PoolData memory pool
-    ) external pure returns (uint256) {
+    ) public pure returns (uint256) {
         return CoreMath.calculateUtilization(market.totalBorrowed, pool.totalSupplied);
     }
     
@@ -477,7 +477,7 @@ contract Core {
         MarketData memory market,
         PoolData memory pool,
         RiskParams memory params
-    ) external pure returns (uint256) {
+    ) public pure returns (uint256) {
         return CoreMath.calculateSpreadRate(
             market.totalBorrowed,
             pool.totalSupplied,
@@ -535,7 +535,7 @@ contract Core {
         uint256 collateralPrice,
         uint256 protocolTotalDebt,
         RiskParams memory params
-    ) external pure returns (uint256) {
+    ) public pure returns (uint256) {
         (uint256 totalDebt, , ) = getUserDebt(market, pool, position, protocolTotalDebt);
         
         uint256 collateralValue = CoreMath.calculateCollateralValue(
