@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./DataStruct.sol";
+import "forge-std/console.sol";
 
 library StorageShell {
     /* "Polynance-Lending-V2-PureDriven" */
@@ -55,6 +56,15 @@ library StorageShell {
     function getPool() internal view returns (PoolData memory) {
         bytes32 key = keccak256(abi.encode(DataType.POOL_DATA,ZERO_ID));
         bytes memory data = _load(key);
+        if (data.length == 0) {
+            console.log("  WARNING: No pool data found, returning empty struct");
+            return PoolData({
+                totalSupplied: 0,
+                totalBorrowedAllMarkets: 0,
+                totalAccumulatedSpread: 0,
+                totalAccumulatedReserves: 0
+            });
+        }
         return abi.decode(data, (PoolData));
     }
 
@@ -67,12 +77,40 @@ library StorageShell {
     function getMarketData(bytes32 id) internal view returns (MarketData memory) {
         bytes32 key = keccak256(abi.encode(DataType.MARKET_DATA, id));
         bytes memory data = _load(key);
+        console.log("StorageShell.getMarketData:");
+        console.log("  id:");
+        console.logBytes32(id);
+        console.log("  data length:", data.length);
+        if (data.length == 0) {
+            console.log("  WARNING: No market data found, returning empty struct");
+            return MarketData({
+                collateralAsset: address(0),
+                collateralAssetDecimals: 0,
+                maturityDate: 0,
+                variableBorrowIndex: 0,
+                totalScaledBorrowed: 0,
+                totalBorrowed: 0,
+                totalCollateral: 0,
+                lastUpdateTimestamp: 0,
+                accumulatedSpread: 0,
+                isActive: false,
+                isMatured: false
+            });
+        }
         return abi.decode(data, (MarketData));
     }
 
     function getUserPosition(bytes32 id) internal view returns (UserPosition memory) {
         bytes32 key = keccak256(abi.encode(DataType.USER_POSITION, id));
         bytes memory data = _load(key);
+        if (data.length == 0) {
+            return UserPosition({
+                collateralAmount: 0,
+                borrowAmount: 0,
+                scaledDebtBalance: 0,
+                lastUpdateTimestamp: 0
+            });
+        }
         return abi.decode(data, (UserPosition));
     }
     function getResolutionData(bytes32 id) internal view returns (ResolutionData memory) {

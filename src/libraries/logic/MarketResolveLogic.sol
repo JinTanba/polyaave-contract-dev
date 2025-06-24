@@ -12,6 +12,9 @@ import "../../interfaces/IOracle.sol";
 import "../../interfaces/IPositionToken.sol";
 import "../PolynanceEE.sol";
 import "./ReserveLogic.sol";
+import {AaveLibrary} from "../../adaptor/AaveModule.sol";
+
+// import "../../adaptor/AaveModule.sol";
 
 library MarketResolveLogic {
     using SafeERC20 for IERC20;
@@ -85,12 +88,11 @@ library MarketResolveLogic {
         });
         
         // 6. Call Core to calculate distributions
-        Core core = Core(address(this));
         (
             MarketData memory newMarket,
             PoolData memory newPool,
             ResolutionData memory newResolution
-        ) = core.processResolution(market, pool, resolution, input, params);
+        ) = Core(address(this)).processResolution(market, pool, resolution, input, params);
         
         // 7. Store updated state
         StorageShell.next(DataType.MARKET_DATA, abi.encode(newMarket), marketId);
@@ -198,9 +200,14 @@ library MarketResolveLogic {
 
         // 4. Withdraw from Aave if needed
         uint256 balanceOfBefore = IERC20(params.supplyAsset).balanceOf(address(this));
-        ILiquidityLayer(params.liquidityLayer).withdraw(
+        // ILiquidityLayer(params.liquidityLayer).withdraw(
+        //     params.supplyAsset,
+        //     IERC20(address(this)).balanceOf(lpHolder),
+        //     address(this)
+        // );
+        AaveLibrary.withdraw(
             params.supplyAsset,
-            IERC20(address(this)).balanceOf(lpHolder),
+            lpTokenAmount,
             address(this)
         );
         uint256 balanceOfAfter = IERC20(params.supplyAsset).balanceOf(address(this));

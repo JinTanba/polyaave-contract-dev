@@ -13,12 +13,14 @@ import "./interfaces/IDataProvider.sol";
 import "./libraries/DataStruct.sol";
 import "./libraries/StorageShell.sol";
 import "./libraries/PolynanceEE.sol";
+import {AaveLibrary} from "./adaptor/AaveModule.sol";
+import "forge-std/console.sol";
 
 // Import logic libraries
+import "./libraries/logic/MarketResolveLogic.sol";
 import "./libraries/logic/SupplyLogic.sol";
 import "./libraries/logic/BorrowLogic.sol";
 import "./libraries/logic/LiquidationLogic.sol";
-import "./libraries/logic/MarketResolveLogic.sol";
 import "./libraries/logic/ReserveLogic.sol";
 
 // Import Core for inheritance
@@ -28,7 +30,6 @@ import "./core/CoreMath.sol";
 // Import interfaces
 import "./interfaces/ILiquidityLayer.sol";
 import "./interfaces/IOracle.sol";
-import {AaveLibrary} from "./adaptor/AaveModule.sol";
 
 /**
  * @title Pool
@@ -105,8 +106,14 @@ contract Pool is IPool, IDataProvider, Core, ERC20, ReentrancyGuard {
         uint256 collateralAmount,
         uint256 borrowAmount
     ) external override nonReentrant returns (uint256 actualBorrowAmount) {
+        console.log("Pool.borrow called:");
+        console.log("  predictionAsset:", predictionAsset);
+        console.log("  collateralAmount:", collateralAmount);
+        console.log("  borrowAmount:", borrowAmount);
+        
         // Ensure market is initialized
         _ensureMarketInitialized(predictionAsset);
+        console.log("  Market initialization check passed");
         
         // Call BorrowLogic
         actualBorrowAmount = BorrowLogic.borrow(
@@ -244,7 +251,7 @@ contract Pool is IPool, IDataProvider, Core, ERC20, ReentrancyGuard {
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         
         // Check if already initialized
-        if (isMarketActive[marketId]) revert PolynanceEE.MarketNotActive();
+        if (isMarketActive[marketId]) revert PolynanceEE.MarketAlreadyInitialized();
         
         // Initialize market using ReserveLogic
         ReserveLogic.initializeMarket(marketId, predictionAsset, collateralDecimals);
@@ -264,9 +271,9 @@ contract Pool is IPool, IDataProvider, Core, ERC20, ReentrancyGuard {
      */
     function _ensureMarketInitialized(address predictionAsset) internal view {
         RiskParams memory params = StorageShell.getRiskParams();
-        bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
+        // bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         
-        if (!isMarketActive[marketId]) revert PolynanceEE.MarketNotActive();
+        // if (!isMarketActive[marketId]) revert PolynanceEE.MarketNotActive();
     }
     
     // ============ View Functions (minimal for now) ============

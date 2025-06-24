@@ -21,6 +21,7 @@ library PolynanceEE {
     
     // ======== Errors ========
     error MarketNotActive();
+    error MarketAlreadyInitialized();
     error InvalidAmount();
     error InsufficientCollateral();
     error InsufficientLiquidity();

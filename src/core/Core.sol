@@ -203,7 +203,8 @@ contract Core {
             newMarket.variableBorrowIndex
         );
 
-        uint256 scaledCurrentRepayReduction = CoreMath.calculateScaledDebt(totalDebt, newMarket.variableBorrowIndex);
+
+        uint256 scaledCurrentRepayReduction = CoreMath.calculateScaledDebt(actualRepayAmount, newMarket.variableBorrowIndex); //TODO: check
         uint256 collateralToReturn = Math.mulDiv(
             newPosition.collateralAmount,
             actualRepayAmount,

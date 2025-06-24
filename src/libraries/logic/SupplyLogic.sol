@@ -58,11 +58,10 @@ library SupplyLogic {
         });
         
         // 5. Call Core with updated pool state
-        Core core = Core(address(this));
         (
             PoolData memory newPool,
             CoreSupplyOutput memory output
-        ) = core.processSupply(pool, input);
+        ) = Core(address(this)).processSupply(pool, input);
         
         lpTokensMinted = output.lpTokensToMint;
         

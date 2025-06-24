@@ -11,6 +11,7 @@ import "../../interfaces/ILiquidityLayer.sol";
 import "../../interfaces/IOracle.sol";
 import "../PolynanceEE.sol";
 import "./ReserveLogic.sol";
+import "forge-std/console.sol";
 
 library BorrowLogic {
     using SafeERC20 for IERC20;
@@ -51,17 +52,31 @@ library BorrowLogic {
         uint256 borrowAmount,
         address predictionAsset
     ) internal returns (uint256 actualBorrowAmount) {
+        console.log("BorrowLogic.borrow called");
+        console.log("  borrower:", borrower);
+        
         // 1. Load current state
         RiskParams memory params = StorageShell.getRiskParams();
+        console.log("  supplyAsset:", params.supplyAsset);
+        console.log("  liquidityLayer:", params.liquidityLayer);
         
         if (collateralAmount == 0 && borrowAmount == 0) revert PolynanceEE.InvalidAmount();
         
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, borrower);
+        console.log("  marketId:");
+        console.logBytes32(marketId);
         
         // 2. Update market indices and get updated state
+        console.log("  Calling ReserveLogic.updateAndStoreMarketIndices...");
         (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
+        console.log("  ReserveLogic.updateAndStoreMarketIndices completed");
+        
+        console.log("  Getting user position...");
         UserPosition memory position = StorageShell.getUserPosition(positionId);
+        console.log("  User position retrieved");
+        console.log("  Market isActive:", market.isActive);
+        console.log("  Market totalBorrowed:", market.totalBorrowed);
         
         // Check if position exists but trying to borrow without collateral
         if (collateralAmount == 0 && position.collateralAmount == 0 && borrowAmount > 0) {
@@ -69,8 +84,12 @@ library BorrowLogic {
         }
         
         // 3. Get oracle price in Ray format
+        console.log("  Getting oracle price for asset:", predictionAsset);
+        console.log("  Oracle address:", params.priceOracle);
         uint256 currentPriceWad = IOracle(params.priceOracle).getCurrentPrice(predictionAsset);
+        console.log("  Oracle price (Wad):", currentPriceWad);
         uint256 currentPriceRay = currentPriceWad.wadToRay();
+        console.log("  Oracle price (Ray):", currentPriceRay);
         
         // 4. Get protocol total debt from Aave
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
@@ -84,14 +103,19 @@ library BorrowLogic {
             protocolTotalDebt: protocolTotalDebt
         });
         
+        console.log("  Core input:");
+        console.log("    borrowAmount:", borrowAmount);
+        console.log("    collateralAmount:", collateralAmount);
+        console.log("    collateralPrice:", currentPriceRay);
+        console.log("    protocolTotalDebt:", protocolTotalDebt);
+        
         // 6. Call Core with updated market and pool data
-        Core core = Core(address(this));
         (
             MarketData memory newMarket,
             PoolData memory newPool,
             UserPosition memory newPosition,
             CoreBorrowOutput memory output
-        ) = core.processBorrow(market, pool, position, input, params);
+        ) = Core(address(this)).processBorrow(market, pool, position, input, params);
         
         actualBorrowAmount = output.actualBorrowAmount;
         
@@ -143,7 +167,6 @@ library BorrowLogic {
     ) internal returns (uint256 actualRepayAmount) {
         // 1. Load current state
         RiskParams memory params = StorageShell.getRiskParams();
-        Core core = Core(address(this));
         
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, borrower);
@@ -160,7 +183,7 @@ library BorrowLogic {
         
         // 4. If repayAmount is 0, calculate total debt to repay all
         if (repayAmount == 0) {
-            (repayAmount, , ) = core.getUserDebt(market, pool, position, protocolTotalDebt);
+            repayAmount = position.borrowAmount;
         }
         
         // 5. Create Core input
@@ -175,9 +198,9 @@ library BorrowLogic {
             PoolData memory newPool,
             UserPosition memory newPosition,
             CoreRepayOutput memory output
-        ) = core.processRepay(market, pool, position, input);
+        ) = Core(address(this)).processRepay(market, pool, position, input);
         
-        actualRepayAmount = output.actualRepayAmount;
+        actualRepayAmount = output.totalDebt;
         
         // 7. Store updated state
         StorageShell.next(DataType.MARKET_DATA, abi.encode(newMarket), marketId);
@@ -258,8 +281,7 @@ library BorrowLogic {
             uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
                 .getTotalDebt(params.supplyAsset, address(this));
                 
-            Core core = Core(address(this));
-            healthFactor = core.getUserHealthFactor(
+            healthFactor = Core(address(this)).getUserHealthFactor(
                 market,
                 pool,
                 position,

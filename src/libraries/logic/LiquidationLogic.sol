@@ -76,13 +76,12 @@ library LiquidationLogic {
         });
         
         // 7. Call Core (handles all validation and calculations)
-        Core core = Core(address(this));
         (
             MarketData memory newMarket,
             PoolData memory newPool,
             UserPosition memory newPosition,
             CoreLiquidationOutput memory output
-        ) = core.processLiquidation(market, pool, position, input, params);
+        ) = Core(address(this)).processLiquidation(market, pool, position, input, params);
         
         actualDebtRepaid = output.actualRepayAmount;
         collateralSeized = output.collateralSeized;
@@ -152,8 +151,7 @@ library LiquidationLogic {
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
             .getTotalDebt(params.supplyAsset, address(this));
         
-        Core core = Core(address(this));
-        return core.getUserHealthFactor(
+        return Core(address(this)).getUserHealthFactor(
             market,
             pool,
             position,
