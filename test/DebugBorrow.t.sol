@@ -85,41 +85,20 @@ contract DebugBorrowTest is PolynanceTest {
     }
     
     function test_Debug_MarketActive() public {
-        // Check if market is active
         bool isActive = pool.isMarketActiveCheck(address(predictionToken));
-        console.log("Market is active:", isActive);
         assertTrue(isActive, "Market should be active");
     }
-    
+
     function test_Debug_BorrowSimple() public {
-        uint256 collateralAmount = 100 * 10 ** PREDICTION_TOKEN_DECIMALS; // 100 tokens
-        uint256 borrowAmount = 20 * 10 ** 6; // 20 USDC
-        
-        console.log("=== Before Borrow ===");
-        console.log("Borrower USDC balance:", USDC.balanceOf(borrower));
-        console.log("Borrower prediction token balance:", predictionToken.balanceOf(borrower));
-        console.log("Pool prediction token balance:", predictionToken.balanceOf(address(pool)));
-        
-        // Get market data
-        bytes32 marketId = StorageShell.reserveId(address(USDC), address(predictionToken));
-        MarketData memory marketBefore = StorageShell.getMarketData(marketId);
-        console.log("Market isActive:", marketBefore.isActive);
-        console.log("Market variableBorrowIndex:", marketBefore.variableBorrowIndex);
-        
+        uint256 collateralAmount = 100 * 10 ** PREDICTION_TOKEN_DECIMALS;
+        uint256 borrowAmount = 20 * 10 ** 6;
+
         vm.startPrank(borrower);
         predictionToken.approve(address(pool), collateralAmount);
-        
-        console.log("=== Attempting Borrow ===");
-        try pool.borrow(address(predictionToken), collateralAmount, borrowAmount) returns (uint256 actualBorrowAmount) {
-            console.log("Borrow successful! Amount:", actualBorrowAmount);
-        } catch Error(string memory reason) {
-            console.log("Borrow failed with reason:", reason);
-            revert(reason);
-        } catch (bytes memory lowLevelData) {
-            console.log("Borrow failed with low-level error");
-            revert("Low level error");
-        }
-        
+
+        uint256 actualBorrowAmount = pool.borrow(address(predictionToken), collateralAmount, borrowAmount);
+        assertGt(actualBorrowAmount, 0, "Borrow should succeed");
+
         vm.stopPrank();
     }
 }

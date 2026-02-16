@@ -77,52 +77,14 @@ contract FinalBorrowTest is PolynanceTest {
     }
     
     function test_Borrow_Debug() public {
-        console.log("=== Debug Borrow Test ===");
-        
-        // Check balances
-        console.log("Borrower USDC balance:", USDC.balanceOf(borrower));
-        console.log("Borrower PRED balance:", predictionToken.balanceOf(borrower));
-        console.log("Pool USDC balance:", USDC.balanceOf(address(pool)));
-        
-        // Get market ID
-        bytes32 marketId = StorageShell.reserveId(address(USDC), address(predictionToken));
-        console.logBytes32(marketId);
-        
-        // Try to get market data
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        console.log("Market isActive:", market.isActive);
-        console.log("Market collateralAsset:", market.collateralAsset);
-        console.log("Market variableBorrowIndex:", market.variableBorrowIndex);
-        
         uint256 collateral = 100e18;
         uint256 borrowAmount = 20e6;
-        
+
         vm.startPrank(borrower);
         predictionToken.approve(address(pool), collateral);
-        
-        // Try borrow with explicit error catching
-        try pool.borrow(address(predictionToken), collateral, borrowAmount) returns (uint256 borrowed) {
-            console.log("Borrow successful! Amount:", borrowed);
-        } catch Error(string memory reason) {
-            console.log("Borrow failed with reason:", reason);
-            revert(reason);
-        } catch Panic(uint256 code) {
-            console.log("Borrow failed with panic code:", code);
-            revert("Panic");
-        } catch (bytes memory lowLevelData) {
-            console.log("Borrow failed with low-level error");
-            console.logBytes(lowLevelData);
-            
-            // Try to decode common error selectors
-            if (lowLevelData.length >= 4) {
-                bytes4 selector = bytes4(lowLevelData);
-                if (selector == 0x7c946ed7) console.log("Error: MarketNotActive");
-                else if (selector == 0x2c5211c6) console.log("Error: InvalidAmount");
-                else if (selector == 0xb3c22358) console.log("Error: InsufficientCollateral");
-                else console.logBytes4(selector);
-            }
-            revert("Low level error");
-        }
+
+        uint256 borrowed = pool.borrow(address(predictionToken), collateral, borrowAmount);
+        assertEq(borrowed, borrowAmount, "Should borrow requested amount");
         vm.stopPrank();
     }
 }

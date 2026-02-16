@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../StorageShell.sol";
 import "../DataStruct.sol";
 import "../../core/Core.sol";
-import "forge-std/console.sol";
 
 /**
  * @title ReserveLogic
@@ -30,34 +29,17 @@ library ReserveLogic {
         MarketData memory market,
         PoolData memory pool
     ) {
-        console.log("ReserveLogic.updateAndStoreMarketIndices called");
-        console.log("  marketId:");
-        console.logBytes32(marketId);
-        
         // Load current state
         RiskParams memory params = StorageShell.getRiskParams();
         market = StorageShell.getMarketData(marketId);
         pool = StorageShell.getPool();
-        
-        console.log("  Market data loaded:");
-        console.log("    isActive:", market.isActive);
-        console.log("    collateralAsset:", market.collateralAsset);
-        console.log("    variableBorrowIndex:", market.variableBorrowIndex);
-        console.log("  Pool data loaded:");
-        console.log("    totalSupplied:", pool.totalSupplied);
-        console.log("    totalBorrowedAllMarkets:", pool.totalBorrowedAllMarkets);
-        
+
         // Update indices via Core (Pool inherits from Core, so we can call directly)
-        console.log("  Calling updateMarketIndices...");
         (market, pool) = Core(address(this)).updateMarketIndices(market, pool, params, block.timestamp);
-        console.log("  updateMarketIndices returned successfully");
-        
+
         // Store updated state immediately
-        console.log("  Storing market data...");
         StorageShell.next(DataType.MARKET_DATA, abi.encode(market), marketId);
-        console.log("  Storing pool data...");
         StorageShell.next(DataType.POOL_DATA, abi.encode(pool), ZERO_ID);
-        console.log("  Storage complete");
         
         return (market, pool);
     }

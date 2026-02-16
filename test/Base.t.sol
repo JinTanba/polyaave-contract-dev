@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "forge-std/console.sol";
 
 // --- INTERFACES ---
 
@@ -47,8 +46,6 @@ contract PolynanceTest is Test {
      * @param usdcToBorrow The amount of USDC the actor will borrow.
      */
     function _procureUsdcForAccount(address actor, uint256 maticToSupply, uint256 usdcToBorrow) internal {
-        console.log("--- Procuring USDC for account:", actor, "---");
-
         // 1. Fund the actor with the MATIC needed for the operation.
         vm.deal(actor, maticToSupply);
         require(actor.balance >= maticToSupply, "Failed to deal MATIC to actor");
@@ -56,32 +53,19 @@ contract PolynanceTest is Test {
         // 2. Impersonate the actor to perform the Aave operations.
         actor = address(this);
 
-        // This entire block is now executed by `actor`
-        // `msg.sender` is `actor`, and `msg.value` is paid from `actor`.
         {
-            console.log(actor);
-            // Wrap MATIC into WMATIC
             WMATIC.deposit{value: maticToSupply}(maticToSupply);
-            console.log("Actor wrapped MATIC.",WMATIC.balanceOf(actor));
             require(WMATIC.balanceOf(actor) >= maticToSupply, "Failed to wrap MATIC");
 
-            // Approve Aave Pool to spend WMATIC
             WMATIC.approve(address(AAVE_POOL), maticToSupply);
-            console.log("Actor approved Aave Pool.");
 
-            // Supply WMATIC to Aave on behalf of self
             AAVE_POOL.supply(address(WMATIC), maticToSupply, actor, 0);
-            console.log("Actor supplied WMATIC.");
 
-            // Borrow USDC from Aave to self
             AAVE_POOL.borrow(address(USDC), usdcToBorrow, 2, 0, actor); // Mode 2: Variable
-            console.log("Actor borrowed USDC.");
         }
 
         // 3. Verification
         uint256 finalUsdcBalance = USDC.balanceOf(actor);
         assertEq(finalUsdcBalance, usdcToBorrow, "Actor's final USDC balance is incorrect.");
-        console.log("Successfully procured %e USDC for actor.", usdcToBorrow);
-        console.log("-----------------------------------------");
     }
 }

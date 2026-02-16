@@ -82,25 +82,14 @@ contract MinimalBorrowTest is PolynanceTest {
     }
     
     function test_MinimalBorrow() public {
-        console.log("=== Starting Minimal Borrow Test ===");
-        
-        // Check market is initialized
-        bytes32 marketId = StorageShell.reserveId(address(USDC), address(predictionToken));
-        MarketData memory market = StorageShell.getMarketData(marketId);
-        console.log("Market isActive:", market.isActive);
-        console.log("Market variableBorrowIndex:", market.variableBorrowIndex);
-        
         uint256 collateral = 100e18; // 100 tokens = $50
         uint256 borrowAmount = 20e6; // 20 USDC
-        
+
         vm.startPrank(borrower);
         predictionToken.approve(address(pool), collateral);
-        
-        console.log("Attempting to borrow...");
         uint256 borrowed = pool.borrow(address(predictionToken), collateral, borrowAmount);
         vm.stopPrank();
-        
-        console.log("Borrowed amount:", borrowed);
+
         assertEq(borrowed, borrowAmount);
     }
 }

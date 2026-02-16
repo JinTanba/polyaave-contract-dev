@@ -67,34 +67,16 @@ contract SimplifiedBorrowTest is PolynanceTest {
         
         // Initialize market
         vm.prank(curator);
-        try pool.initializeMarket(address(predictionToken), 18) {
-            console.log("Market initialized successfully");
-        } catch Error(string memory reason) {
-            console.log("Market initialization failed:", reason);
-        } catch (bytes memory) {
-            console.log("Market initialization failed with low-level error");
-        }
+        pool.initializeMarket(address(predictionToken), 18);
     }
-    
+
     function test_SimpleBorrow() public {
-        console.log("=== Simple Borrow Test ===");
-        console.log("Borrower PRED balance:", predictionToken.balanceOf(borrower));
-        console.log("Borrower USDC balance:", USDC.balanceOf(borrower));
-        console.log("Pool USDC balance:", USDC.balanceOf(address(pool)));
-        console.log("AaveModule USDC balance:", USDC.balanceOf(address(aaveModule)));
-        
         uint256 collateral = 100e18;
         uint256 borrowAmount = 20e6;
-        
+
         vm.startPrank(borrower);
         predictionToken.approve(address(pool), collateral);
-        
-        console.log("\nAttempting to borrow...");
         pool.borrow(address(predictionToken), collateral, borrowAmount);
         vm.stopPrank();
-        
-        console.log("\nAfter borrow:");
-        console.log("Borrower PRED balance:", predictionToken.balanceOf(borrower));
-        console.log("Borrower USDC balance:", USDC.balanceOf(borrower));
     }
 }

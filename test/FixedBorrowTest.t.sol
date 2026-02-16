@@ -68,72 +68,35 @@ contract FixedBorrowTest is PolynanceTest {
         
         // Initialize market
         vm.prank(curator);
-        try pool.initializeMarket(address(predictionToken), 18) {
-            console.log("Market initialized successfully");
-        } catch {
-            console.log("Market initialization failed");
-        }
+        pool.initializeMarket(address(predictionToken), 18);
     }
-    
+
     function test_BorrowWithProperStateAccess() public {
-        console.log("=== Borrow Test with Proper State Access ===");
-        
-        // Get initial pool state using IDataProvider interface
         IDataProvider dataProvider = IDataProvider(address(pool));
-        
+
         (uint256 totalSuppliedBefore, uint256 totalBorrowedBefore,,) = dataProvider.getPoolSummary();
-        console.log("Initial pool state:");
-        console.log("  Total supplied:", totalSuppliedBefore);
-        console.log("  Total borrowed:", totalBorrowedBefore);
-        
-        // Get initial user position
-        (uint256 collateralBefore, uint256 borrowAmountBefore, uint256 totalDebtBefore,,) = 
+
+        (uint256 collateralBefore, uint256 borrowAmountBefore, uint256 totalDebtBefore,,) =
             dataProvider.getUserPositionSummary(borrower, address(predictionToken));
-        console.log("Initial user position:");
-        console.log("  Collateral:", collateralBefore);
-        console.log("  Borrow amount:", borrowAmountBefore);
-        console.log("  Total debt:", totalDebtBefore);
-        
-        // Get initial market state
-        (bool isActive,, uint256 marketTotalBorrowedBefore, uint256 marketTotalCollateralBefore,,) = 
+
+        (bool isActive,, uint256 marketTotalBorrowedBefore, uint256 marketTotalCollateralBefore,,) =
             dataProvider.getMarketSummary(address(predictionToken));
-        console.log("Initial market state:");
-        console.log("  Is active:", isActive);
-        console.log("  Total borrowed:", marketTotalBorrowedBefore);
-        console.log("  Total collateral:", marketTotalCollateralBefore);
-        
+
         uint256 collateral = 100e18;
         uint256 borrowAmount = 20e6;
-        
-        // Execute borrow
+
         vm.startPrank(borrower);
         predictionToken.approve(address(pool), collateral);
-        
-        console.log("\nExecuting borrow...");
         uint256 actualBorrowAmount = pool.borrow(address(predictionToken), collateral, borrowAmount);
-        console.log("Borrow executed! Actual amount:", actualBorrowAmount);
         vm.stopPrank();
-        
-        // Get final pool state
+
         (uint256 totalSuppliedAfter, uint256 totalBorrowedAfter,,) = dataProvider.getPoolSummary();
-        console.log("\nFinal pool state:");
-        console.log("  Total supplied:", totalSuppliedAfter);
-        console.log("  Total borrowed:", totalBorrowedAfter);
-        
-        // Get final user position
-        (uint256 collateralAfter, uint256 borrowAmountAfter, uint256 totalDebtAfter,,) = 
+
+        (uint256 collateralAfter, uint256 borrowAmountAfter, uint256 totalDebtAfter,,) =
             dataProvider.getUserPositionSummary(borrower, address(predictionToken));
-        console.log("Final user position:");
-        console.log("  Collateral:", collateralAfter);
-        console.log("  Borrow amount:", borrowAmountAfter);
-        console.log("  Total debt:", totalDebtAfter);
-        
-        // Get final market state
-        (,, uint256 marketTotalBorrowedAfter, uint256 marketTotalCollateralAfter,,) = 
+
+        (,, uint256 marketTotalBorrowedAfter, uint256 marketTotalCollateralAfter,,) =
             dataProvider.getMarketSummary(address(predictionToken));
-        console.log("Final market state:");
-        console.log("  Total borrowed:", marketTotalBorrowedAfter);
-        console.log("  Total collateral:", marketTotalCollateralAfter);
         
         // Assertions
         assertEq(actualBorrowAmount, borrowAmount, "Should borrow requested amount");
@@ -165,14 +128,11 @@ contract FixedBorrowTest is PolynanceTest {
         // Get state before repay
         IDataProvider dataProvider = IDataProvider(address(pool));
         (,, uint256 totalDebtBefore,,) = dataProvider.getUserPositionSummary(borrower, address(predictionToken));
-        console.log("Total debt before repay:", totalDebtBefore);
-        
+
         // Repay all
         USDC.approve(address(pool), type(uint256).max);
         uint256 repaidAmount = pool.repay(address(predictionToken), 0);
         vm.stopPrank();
-        
-        console.log("Repaid amount:", repaidAmount);
         assertTrue(repaidAmount >= borrowAmount, "Repaid amount should include interest");
         
         // Check final state

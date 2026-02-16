@@ -14,8 +14,6 @@ import "./libraries/DataStruct.sol";
 import "./libraries/StorageShell.sol";
 import "./libraries/PolynanceEE.sol";
 import {AaveLibrary} from "./adaptor/AaveModule.sol";
-import "forge-std/console.sol";
-
 // Import logic libraries
 import "./libraries/logic/MarketResolveLogic.sol";
 import "./libraries/logic/SupplyLogic.sol";
@@ -106,14 +104,8 @@ contract Pool is IPool, IDataProvider, Core, ERC20, ReentrancyGuard {
         uint256 collateralAmount,
         uint256 borrowAmount
     ) external override nonReentrant returns (uint256 actualBorrowAmount) {
-        console.log("Pool.borrow called:");
-        console.log("  predictionAsset:", predictionAsset);
-        console.log("  collateralAmount:", collateralAmount);
-        console.log("  borrowAmount:", borrowAmount);
-        
         // Ensure market is initialized
         _ensureMarketInitialized(predictionAsset);
-        console.log("  Market initialization check passed");
         
         // Call BorrowLogic
         actualBorrowAmount = BorrowLogic.borrow(

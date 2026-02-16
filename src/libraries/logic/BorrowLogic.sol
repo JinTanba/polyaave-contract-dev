@@ -11,7 +11,6 @@ import "../../interfaces/ILiquidityLayer.sol";
 import "../../interfaces/IOracle.sol";
 import "../PolynanceEE.sol";
 import "./ReserveLogic.sol";
-import "forge-std/console.sol";
 
 library BorrowLogic {
     using SafeERC20 for IERC20;
@@ -52,62 +51,38 @@ library BorrowLogic {
         uint256 borrowAmount,
         address predictionAsset
     ) internal returns (uint256 actualBorrowAmount) {
-        console.log("BorrowLogic.borrow called");
-        console.log("  borrower:", borrower);
-        
         // 1. Load current state
         RiskParams memory params = StorageShell.getRiskParams();
-        console.log("  supplyAsset:", params.supplyAsset);
-        console.log("  liquidityLayer:", params.liquidityLayer);
-        
+
         if (collateralAmount == 0 && borrowAmount == 0) revert PolynanceEE.InvalidAmount();
-        
+
         bytes32 marketId = StorageShell.reserveId(params.supplyAsset, predictionAsset);
         bytes32 positionId = StorageShell.userPositionId(marketId, borrower);
-        console.log("  marketId:");
-        console.logBytes32(marketId);
-        
+
         // 2. Update market indices and get updated state
-        console.log("  Calling ReserveLogic.updateAndStoreMarketIndices...");
         (MarketData memory market, PoolData memory pool) = ReserveLogic.updateAndStoreMarketIndices(marketId);
-        console.log("  ReserveLogic.updateAndStoreMarketIndices completed");
-        
-        console.log("  Getting user position...");
         UserPosition memory position = StorageShell.getUserPosition(positionId);
-        console.log("  User position retrieved");
-        console.log("  Market isActive:", market.isActive);
-        console.log("  Market totalBorrowed:", market.totalBorrowed);
-        
+
         // Check if position exists but trying to borrow without collateral
         if (collateralAmount == 0 && position.collateralAmount == 0 && borrowAmount > 0) {
             revert PolynanceEE.InsufficientCollateral();
         }
-        
+
         // 3. Get oracle price in Ray format
-        console.log("  Getting oracle price for asset:", predictionAsset);
-        console.log("  Oracle address:", params.priceOracle);
         uint256 currentPriceWad = IOracle(params.priceOracle).getCurrentPrice(predictionAsset);
-        console.log("  Oracle price (Wad):", currentPriceWad);
         uint256 currentPriceRay = currentPriceWad.wadToRay();
-        console.log("  Oracle price (Ray):", currentPriceRay);
-        
+
         // 4. Get protocol total debt from Aave
         uint256 protocolTotalDebt = ILiquidityLayer(params.liquidityLayer)
             .getTotalDebt(params.supplyAsset, address(this));
-        
+
         // 5. Create Core input with price in Ray
         CoreBorrowInput memory input = CoreBorrowInput({
             borrowAmount: borrowAmount,
             collateralAmount: collateralAmount,
-            collateralPrice: currentPriceRay,  // Ray format
+            collateralPrice: currentPriceRay,
             protocolTotalDebt: protocolTotalDebt
         });
-        
-        console.log("  Core input:");
-        console.log("    borrowAmount:", borrowAmount);
-        console.log("    collateralAmount:", collateralAmount);
-        console.log("    collateralPrice:", currentPriceRay);
-        console.log("    protocolTotalDebt:", protocolTotalDebt);
         
         // 6. Call Core with updated market and pool data
         (
